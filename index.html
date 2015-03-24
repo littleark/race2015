@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Mirror</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="fonts/fonts.css" type="text/css" />
+    <link rel="stylesheet" href="css/mirrorseats.css" type="text/css" />
+    <script src="js/vendors/d3.min.js" charset="utf-8"></script>
+</head>
+<body>
+	<div id="seatsCharts">
+		<div id="seats" class="seats-chart"></div>
+		<div id="legend">
+			<div>
+		        <ul class="left ul__party t-ul__party">
+		          <li rel="lab"><span class="rect bgc-lab"></span>Lab</li>
+		          <li rel="snp"><span class="rect bgc-snp"></span>SNP</li>
+		          <li class="deselected" rel="green"><span class="rect bgc-grn"></span>Grn</li>
+		          <li class="deselected" rel="others"><span class="rect bgc-others"></span>Others</li>
+		          <li class="deselected" rel="pc"><span class="rect bgc-others"></span>PC</li>
+		          <li class="deselected" rel="dup"><span class="rect bgc-others"></span>DUP</li>
+		          <li class="deselected" rel="ukip"><span class="rect bgc-ukip"></span>Ukip</li>
+		          <li class="deselected" rel="libdem"><span class="rect bgc-ldem"></span>LD</li>
+		          <li class="deselected" rel="con"><span class="rect bgc-con"></span>Con</li>
+		        </ul>
+		    </div>
+		    <div>
+		        <ul class="right ul__party t-ul__party">
+		          <li class="deselected" rel="lab">Lab<span class="rect bgc-lab"></span></li>
+		          <li class="deselected" rel="snp">SNP<span class="rect bgc-snp"></span></li>
+		          <li class="deselected" rel="green">Grn<span class="rect bgc-grn"></span></li>
+		          <li class="deselected" rel="dup">DUP<span class="rect bgc-others"></span></li>
+		          <li class="deselected" rel="pc">PC<span class="rect bgc-others"></span></li>
+		          <li class="deselected" rel="others">Others<span class="rect bgc-others"></span></li>
+		          <li class="deselected" rel="ukip">Ukip<span class="rect bgc-ukip"></span></li>
+		          <li rel="libdem">LD<span class="rect bgc-ldem"></span></li>
+		          <li rel="con">Con<span class="rect bgc-con"></span></li>
+		        </ul>
+		    </div>
+		</div>
+	</div>
+	<script src="js/coalitionsMirrorLinechart.js"></script>
+	<script>
+		var chart;
+		var format=d3.time.format("%d/%m/%Y")
+		d3.json("http://interactive.guim.co.uk/spreadsheetdata/1YilVzArect3kcE1rzJvYivXkfs1oL0MLCrvC9GjPF6E.json",function(data){
+			console.log(data.sheets["Log Seats"])
+			
+			var dataSeats=data.sheets["Log Seats"];
+			dataSeats.forEach(function(d){
+				d.date=format.parse(d.logdate);
+				//d.others+=(d["dup"]+d["pc"])
+			})
+			
+			var today=format.parse(data.sheets["RESULT"][0]["currentdate"]);
+
+			dataSeats = dataSeats.filter(function(d){
+	            return +d.date !=  (+today);
+	        })
+	        var dataLatest=(function(latest){
+	                            latest.logdate=format.parse(latest.date)
+	                            latest.others+=(latest["dup"]+latest["pc"])
+	                            return latest;
+	                        }(data.sheets["RESULT"][0]));
+
+	        dataLatest.date=today;
+
+
+	        dataSeats.push(dataLatest);
+		
+			var coalitions={
+				"left":["lab","snp"],
+				"right":["con","libdem"]
+			}
+
+			chart=new CoalitionsMirrorLineChart(dataSeats,{
+						container:"#seats",
+						fields:coalitions,
+						interpolate:"step"
+					});
+			function addRemoveParty(side,party) {
+
+				if(coalitions[side].indexOf(party)===-1) {
+					coalitions[side].push(party);
+				} else {
+					coalitions[side]=coalitions[side].filter(function(d){
+						return d!=party;
+					})
+				}
+				chart.setCoalition(coalitions[side],side);
+				chart.update();
+			}
+			d3.selectAll("#legend ul.left li")
+				.on("click",function(d){
+					var __this=d3.select(this);
+					__this
+						.classed("deselected", !__this.classed("deselected"))
+
+					var party=__this.attr("rel");
+
+					addRemoveParty("left",party)
+
+				})
+
+			d3.selectAll("#legend ul.right li")
+				.on("click",function(d){
+					var __this=d3.select(this);
+					__this
+						.classed("deselected", !__this.classed("deselected"))
+
+					var party=__this.attr("rel");
+
+					addRemoveParty("right",party)
+
+				})
+
+			
+
+			
+						
+
+		})
+
+	</script>
+</body>
+</html>
